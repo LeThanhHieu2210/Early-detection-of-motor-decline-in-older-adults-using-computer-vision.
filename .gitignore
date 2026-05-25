@@ -1,0 +1,20 @@
+# Bỏ qua môi trường ảo (Cực kỳ quan trọng)
+.venv/
+venv/
+env/
+
+# bỏ qua folder
+Person VOC.v1-roboflow-instant-1--eval-.yolo26/
+# Bỏ qua các file rác tự sinh ra khi chạy code Python
+__pycache__/
+*.pyc
+
+# Bỏ qua các file dữ liệu nặng (Nếu bạn có test ảnh, video thuật toán)
+# *.mp4
+# *.jpg
+# (Bỏ dấu # ở trước nếu bạn muốn Git lờ đi các file này)
+
+# Bỏ qua file cấu hình của hệ điều hành (Windows/macOS)
+Thumbs.db
+.DS_Store
+

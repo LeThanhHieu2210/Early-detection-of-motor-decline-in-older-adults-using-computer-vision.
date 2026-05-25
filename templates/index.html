@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bảng Điều Khiển Theo Dõi Vận Động Và Phát Hiện Té Ngã</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <div class="brand">
+          <div class="brand__title">Bảng Điều Khiển Theo Dõi Vận Động Và Phát Hiện Té Ngã</div>
+          <div class="brand__subtitle">Hệ Thống Phát Hiện Suy Giảm Vận Động Sớm (EMDD)</div>
+        </div>
+        <div class="pill pill--muted" id="pill-connection">Đang kết nối…</div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="videoCard">
+        <div class="videoCard__header">
+          <div class="status">
+            <div class="status__dot" id="status-dot" aria-hidden="true"></div>
+            <div class="status__text" id="status-text">Trạng thái: Đang khởi tạo</div>
+          </div>
+        </div>
+
+        <div class="videoWrap">
+          <img
+            class="video"
+            id="video-stream"
+            src="{{ url_for('video_feed') }}"
+            alt="Luồng video trực tiếp"
+          />
+        </div>
+      </section>
+
+      <aside class="sidePanel" id="side-panel">
+        <div class="panelCard switchCard discoverOnly">
+          <div class="panelCard__title">Cảnh Báo Thời Gian Thực</div>
+          <div class="alertBox" id="alert-box">
+            <div class="alertBox__label" id="alert-label">Trạng thái: Đang khởi tạo</div>
+            <div class="alertBox__hint">
+              Hệ thống làm nổi bật khung phát hiện, các điểm khớp xương và phát cảnh báo té ngã
+              khi phát hiện hông hạ xuống nhanh rồi chuyển sang tư thế nằm.
+            </div>
+          </div>
+        </div>
+
+        <div class="panelCard switchCard discoverOnly">
+          <div class="panelCard__title">Ghi Chú</div>
+          <ul class="notes">
+            <li>Giữ đối tượng ở giữa khung hình để theo dõi tốt nhất.</li>
+            <li>Ánh sáng và góc camera ảnh hưởng đến chất lượng điểm khớp.</li>
+          </ul>
+        </div>
+
+        <div class="panelCard switchCard detectedOnly" id="posture-card">
+          <div class="panelCard__title">Theo Dõi Tư Thế</div>
+          <div class="postureBox">
+            <div class="postureBox__label">Tư thế hiện tại</div>
+            <div class="postureBox__value" id="posture-value">Chưa phát hiện</div>
+          </div>
+        </div>
+
+        <div class="panelCard switchCard fallAlertCard" id="fall-alert-card">
+          <div class="fallAlertCard__inner">
+            <div class="fallAlertCard__icon" aria-hidden="true">⛔</div>
+            <div class="fallAlertCard__title">CẢNH BÁO TÉ NGÃ</div>
+            <div class="fallAlertCard__text">Phát hiện té ngã. Vui lòng kiểm tra.</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      const statusText = document.getElementById("status-text");
+      const statusDot = document.getElementById("status-dot");
+      const alertBox = document.getElementById("alert-box");
+      const alertLabel = document.getElementById("alert-label");
+      const pillConnection = document.getElementById("pill-connection");
+      const sidePanel = document.getElementById("side-panel");
+      const postureValue = document.getElementById("posture-value");
+
+      function applyLevel(level) {
+        const levels = ["normal", "warning", "alert"];
+        for (const lv of levels) {
+          statusDot.classList.toggle(`dot--${lv}`, lv === level);
+          alertBox.classList.toggle(`alertBox--${lv}`, lv === level);
+        }
+      }
+
+      async function pollStatus() {
+        try {
+          const res = await fetch("/status", { cache: "no-store" });
+          if (!res.ok) throw new Error("bad status");
+          const data = await res.json();
+
+          pillConnection.textContent = "Đã kết nối";
+          pillConnection.classList.add("pill--ok");
+
+          statusText.textContent = data.label;
+          alertLabel.textContent = data.label;
+          applyLevel(data.level || "warning");
+
+          const personDetected = Boolean(data.person_detected);
+          sidePanel.classList.toggle("sidePanel--detected", personDetected);
+          postureValue.textContent = data.posture || "Chưa rõ";
+          const isFallDetected = Boolean(data.fall_detected);
+          sidePanel.classList.toggle("sidePanel--fall", personDetected && isFallDetected);
+          postureValue.classList.toggle("posture--ok", personDetected && !isFallDetected);
+          postureValue.classList.toggle("posture--alert", isFallDetected);
+        } catch (e) {
+          pillConnection.textContent = "Mất kết nối";
+          pillConnection.classList.remove("pill--ok");
+
+          statusText.textContent = "Trạng thái: Đang chờ backend…";
+          alertLabel.textContent = "Trạng thái: Đang chờ backend…";
+          applyLevel("warning");
+          sidePanel.classList.remove("sidePanel--detected");
+          sidePanel.classList.remove("sidePanel--fall");
+          postureValue.textContent = "Chưa phát hiện";
+          postureValue.classList.remove("posture--ok", "posture--alert");
+        }
+      }
+
+      pollStatus();
+      setInterval(pollStatus, 500);
+    </script>
+  </body>
+</html>

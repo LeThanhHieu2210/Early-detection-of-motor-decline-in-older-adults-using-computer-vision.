@@ -1,0 +1,17 @@
+Image
+
+  ↓
+
+YOLO best.pt
+
+  ↓
+
+Crop person
+
+  ↓
+
+MediaPipe Pose
+
+  ↓
+
+Draw skeleton
